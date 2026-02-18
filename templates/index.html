@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Editor de nodos · Flask</title>
+  <link rel="stylesheet" href="https://jocarsa.github.io/cssreset/cssreset.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header>
+    <button id="play" class="btn">▶ Ejecutar grafo</button>
+    <button id="deleteNode" class="btn" title="Elimina el nodo seleccionado (Supr)">🗑 Eliminar</button>
+    <div class="muted">Pan: Ctrl + arrastrar · Zoom: Ctrl + rueda · Selección: clic · Borrar: Supr</div>
+    <div class="muted">BASE_DIR: <code>{{ base_dir }}</code></div>
+  </header>
+
+  <section id="tools">
+    <h3>Herramientas</h3>
+    <div id="tools-list"><div class="muted">Cargando herramientas…</div></div>
+  </section>
+
+  <main id="centro" aria-label="zona de trabajo">
+    <div id="mundo">
+      <svg id="edges" viewBox="0 0 4000 3000" preserveAspectRatio="none"></svg>
+    </div>
+    <div id="hint">Arrastra salida → entrada para conectar</div>
+  </main>
+
+  <aside id="console">
+    <h3>Consola</h3>
+    <pre id="log">Listo.</pre>
+  </aside>
+
+  <script>
+    window.APP_CONFIG = { baseDir: "{{ base_dir }}" };
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
+</body>
+</html>
+
