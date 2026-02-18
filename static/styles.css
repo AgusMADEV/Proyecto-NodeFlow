@@ -429,6 +429,48 @@ code{
   margin:0;
   font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
   box-shadow: inset 0 2px 8px rgba(0,0,0,.3);
+  min-height: 200px;
+}
+
+/* ===== Mini-mapa ===== */
+#minimap-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#minimap-container h4 {
+  margin: 0;
+  font: 600 13px/1.2 system-ui;
+  color: var(--primary);
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#minimap-container h4 svg {
+  stroke: var(--accent);
+  flex-shrink: 0;
+}
+
+#minimap {
+  width: 100%;
+  height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-light);
+  cursor: pointer;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,.1);
+  transition: all 0.2s ease;
+}
+
+#minimap:hover {
+  border-color: var(--accent);
+  box-shadow: 
+    inset 0 1px 4px rgba(0,0,0,.1),
+    0 0 0 3px rgba(255,155,81,.15);
 }
 
 /* ===== Canvas ===== */

@@ -516,8 +516,19 @@ function hacerDraggable(el){
     hasMoved=true;
     const dx=(e.clientX-startX)/scale;
     const dy=(e.clientY-startY)/scale;
-    el.style.left = (origX+dx) + "px";
-    el.style.top  = (origY+dy) + "px";
+    const newX = origX+dx;
+    const newY = origY+dy;
+    el.style.left = newX + "px";
+    el.style.top  = newY + "px";
+    
+    // Actualizar también las propiedades x,y del nodo
+    const nodeId = el.dataset.nodeId;
+    const node = nodos.find(n => n.id === nodeId);
+    if (node) {
+      node.x = newX;
+      node.y = newY;
+    }
+    
     actualizarConexiones();
     if(conexionEnCurso) actualizarPreviewConexion(e);
   });
@@ -1279,4 +1290,206 @@ window.WORKFLOW_API = {
   copy: copyNode,
   paste: pasteNode
 };
+
+// ==================== MINI-MAPA ====================
+const minimapCanvas = document.getElementById("minimap");
+const minimapCtx = minimapCanvas ? minimapCanvas.getContext("2d") : null;
+
+// Constantes del mundo (deben coincidir con #mundo en CSS)
+const WORLD_WIDTH = 4000;
+const WORLD_HEIGHT = 3000;
+
+// Throttle para el renderizado del mini-mapa
+let minimapRenderScheduled = false;
+
+/**
+ * Renderiza el mini-mapa con vista general del grafo
+ */
+function renderMinimap() {
+  if (!minimapCtx || !minimapCanvas) return;
+
+  // Si ya hay un render programado, salir
+  if (minimapRenderScheduled) return;
+  
+  minimapRenderScheduled = true;
+  requestAnimationFrame(() => {
+    minimapRenderScheduled = false;
+    
+    const canvas = minimapCanvas;
+    const ctx = minimapCtx;
+
+    // Ajustar la resolución del canvas para que sea nítido
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Calcular escala para que el mundo entero quepa en el mini-mapa
+    const scaleX = rect.width / WORLD_WIDTH;
+    const scaleY = rect.height / WORLD_HEIGHT;
+    const minimapScale = Math.min(scaleX, scaleY);
+
+    // Limpiar canvas
+    ctx.fillStyle = "#EAEFEF";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    // Dibujar grid suave
+    ctx.strokeStyle = "rgba(37, 52, 63, 0.05)";
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < WORLD_WIDTH; x += 200) {
+      const sx = x * minimapScale;
+      ctx.beginPath();
+      ctx.moveTo(sx, 0);
+      ctx.lineTo(sx, rect.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < WORLD_HEIGHT; y += 200) {
+      const sy = y * minimapScale;
+      ctx.beginPath();
+      ctx.moveTo(0, sy);
+      ctx.lineTo(rect.width, sy);
+      ctx.stroke();
+    }
+
+    // Dibujar conexiones
+    ctx.strokeStyle = "#FF9B51";
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+
+    conexiones.forEach(con => {
+      const fromNode = nodos[con.from];
+      const toNode = nodos[con.to];
+      if (!fromNode || !toNode) return;
+
+      // Obtener posiciones reales de los nodos
+      const fromX = parseFloat(fromNode.el.style.left || "0");
+      const fromY = parseFloat(fromNode.el.style.top || "0");
+      const toX = parseFloat(toNode.el.style.left || "0");
+      const toY = parseFloat(toNode.el.style.top || "0");
+      
+      // Usar dimensiones aproximadas (centro del nodo)
+      const centerOffsetX = 110; // mitad de ancho mínimo (220px)
+      const centerOffsetY = 65;  // mitad de alto mínimo (130px)
+
+      const x1 = (fromX + centerOffsetX) * minimapScale;
+      const y1 = (fromY + centerOffsetY) * minimapScale;
+      const x2 = (toX + centerOffsetX) * minimapScale;
+      const y2 = (toY + centerOffsetY) * minimapScale;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
+
+    // Dibujar nodos - obtener posiciones reales desde los elementos
+    nodos.forEach(n => {
+      // Leer posición real del elemento
+      const nodeX = parseFloat(n.el.style.left || "0");
+      const nodeY = parseFloat(n.el.style.top || "0");
+      
+      // Usar dimensiones aproximadas basadas en offsetWidth/offsetHeight
+      const nodeWidth = n.el.offsetWidth || 220;
+      const nodeHeight = n.el.offsetHeight || 130;
+      
+      const x = nodeX * minimapScale;
+      const y = nodeY * minimapScale;
+      const w = nodeWidth * minimapScale;
+      const h = nodeHeight * minimapScale;
+
+      // Nodo seleccionado con highlight
+      if (n.id === selectedNodeId) {
+        ctx.fillStyle = "#FF9B51";
+        ctx.strokeStyle = "#25343F";
+        ctx.lineWidth = 2;
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#BFC9D1";
+        ctx.lineWidth = 1;
+      }
+
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+    });
+
+    // Calcular y dibujar viewport actual
+    const centroRect = centro.getBoundingClientRect();
+    const viewportWidth = centroRect.width / scale;
+    const viewportHeight = centroRect.height / scale;
+    const viewportX = -translateX / scale;
+    const viewportY = -translateY / scale;
+
+    const vx = viewportX * minimapScale;
+    const vy = viewportY * minimapScale;
+    const vw = viewportWidth * minimapScale;
+    const vh = viewportHeight * minimapScale;
+
+    // Viewport semi-transparente
+    ctx.fillStyle = "rgba(255, 155, 81, 0.15)";
+    ctx.fillRect(vx, vy, vw, vh);
+
+    // Borde del viewport
+    ctx.strokeStyle = "#FF9B51";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(vx, vy, vw, vh);
+    ctx.setLineDash([]);
+  });
+}
+
+/**
+ * Navega al punto clickeado en el mini-mapa
+ */
+function handleMinimapClick(e) {
+  if (!minimapCanvas) return;
+
+  const rect = minimapCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Convertir coordenadas del mini-mapa a coordenadas del mundo
+  const scaleX = rect.width / WORLD_WIDTH;
+  const scaleY = rect.height / WORLD_HEIGHT;
+  const minimapScale = Math.min(scaleX, scaleY);
+
+  const worldX = x / minimapScale;
+  const worldY = y / minimapScale;
+
+  // Calcular viewport
+  const centroRect = centro.getBoundingClientRect();
+  const viewportWidth = centroRect.width / scale;
+  const viewportHeight = centroRect.height / scale;
+
+  // Centrar el viewport en el punto clickeado
+  translateX = -(worldX - viewportWidth / 2) * scale;
+  translateY = -(worldY - viewportHeight / 2) * scale;
+
+  aplicarTransform();
+  actualizarConexiones();
+  renderMinimap();
+}
+
+// Event listener para clicks en el mini-mapa
+if (minimapCanvas) {
+  minimapCanvas.addEventListener("click", handleMinimapClick);
+}
+
+// Llamar renderMinimap después de operaciones que cambian el grafo/viewport
+const originalAplicarTransform = aplicarTransform;
+aplicarTransform = function() {
+  originalAplicarTransform();
+  renderMinimap();
+};
+
+const originalActualizarConexiones = actualizarConexiones;
+actualizarConexiones = function() {
+  originalActualizarConexiones();
+  renderMinimap();
+};
+
+// Renderizar mini-mapa inicial
+requestAnimationFrame(() => {
+  renderMinimap();
+});
 

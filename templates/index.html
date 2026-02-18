@@ -68,10 +68,10 @@
       <button 
         id="toggle-all-categories" 
         type="button"
-        style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--primary);transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;"
-        title="Colapsar todas las categorías"
+        style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:10px;color:var(--primary);transition:all 0.2s ease;"
+        title="Expandir/Colapsar todas las categorías"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M7 13l5 5 5-5M7 7l5 5 5-5"/>
         </svg>
       </button>
@@ -108,10 +108,22 @@
   <aside id="console">
     <h3>Consola</h3>
     <pre id="log">Listo.</pre>
+    <div id="minimap-container">
+      <h4>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
+        </svg>
+        Mini-mapa
+      </h4>
+      <canvas id="minimap"></canvas>
+    </div>
   </aside>
 
-  <script>
-    window.APP_CONFIG = { baseDir: {{ base_dir|tojson }} };
+  <script id="app-config" type="application/json">
+    {
+      "baseDir": {{ base_dir|tojson }}
+    }
   </script>
   <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
 </body>
