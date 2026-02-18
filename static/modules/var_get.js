@@ -5,29 +5,65 @@ export default {
     const defN = toolSpec?.config?.name?.default ?? "x";
     const defD = toolSpec?.config?.default?.default ?? "";
     body.innerHTML = `
-      <div class="form-row">
-        <label for="name_${nodeId}">Nombre de variable</label>
-        <input id="name_${nodeId}" type="text" value="${defN}" placeholder="x">
-      </div>
-      <div class="form-row">
-        <label for="default_${nodeId}">Valor por defecto</label>
-        <input id="default_${nodeId}" type="text" value="${defD}" placeholder="">
-      </div>
+      <label style="font:600 12px system-ui;opacity:.8">Nombre de variable</label>
+      <input 
+        id="name_${nodeId}" 
+        data-config-key="name"
+        type="text" 
+        value="${defN}" 
+        placeholder="x"
+        style="font-size:12px"
+      />
+
+      <label style="font:600 12px system-ui;opacity:.8;margin-top:8px">Valor por defecto</label>
+      <input 
+        id="default_${nodeId}" 
+        data-config-key="default"
+        type="text" 
+        value="${defD}" 
+        placeholder="(si no existe)"
+        style="font-size:12px"
+      />
     `;
+
+    const titleEl = el.querySelector(".title");
+    const nameInput = body.querySelector('[data-config-key="name"]');
+    
+    const refreshTitle = () => {
+      const name = nameInput.value.trim() || "x";
+      titleEl.textContent = `Obtener: ${name}`;
+    };
+
+    nameInput.addEventListener("input", refreshTitle);
+    refreshTitle();
   },
   readConfig(el){
-    const inputs = el.querySelectorAll(".body input");
-    const name = inputs?.[0]?.value?.trim() || "x";
-    const def  = inputs?.[1]?.value ?? "";
-    return { name, default: def };
+    const config = {};
+    el.querySelectorAll("[data-config-key]").forEach(inp => {
+      const key = inp.dataset.configKey;
+      config[key] = inp.value;
+    });
+    return config;
   },
   renderResult(el, data){
     const body = el.querySelector(".body");
-    const d = document.createElement("div");
-    d.style.font="12px ui-monospace";
-    d.style.marginTop="6px";
-    d.textContent = `→ ${data?.name}: ${String(data?.value)}`;
-    body.appendChild(d);
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+
+    if (data?.name) {
+      output.innerHTML = `
+        <div style="color:#4ec9b0;font-weight:600">${data.name}</div>
+        <div style="color:#ddd;margin-top:4px">${String(data.value)}</div>
+      `;
+    } else {
+      output.innerHTML = `<div style="color:#f48771">✗ Variable no encontrada</div>`;
+    }
+
+    body.appendChild(output);
   }
 };
 

@@ -5,9 +5,9 @@ export default {
   buildBody(el) {
     const body = el.querySelector(".body");
     body.innerHTML = `
-      <div class="muted" style="font-size:12px">
-        Entradas: <code>cond</code> (bool) y <code>payload</code> (cualquier dato).<br>
-        Salidas: <code>true</code> y <code>false</code>.
+      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+        📥 Entradas: <code>cond</code> (bool) y <code>payload</code><br>
+        📤 Salidas: <code>true</code> y <code>false</code>
       </div>
     `;
 
@@ -21,11 +21,21 @@ export default {
 
   renderResult(el, data){
     const body = el.querySelector(".body");
-    const pre = document.createElement("div");
-    pre.className = "run-output";
-    pre.style.font="12px ui-monospace";
-    pre.textContent = `condición: ${data?.result === true ? "true" : "false"}`;
-    body.appendChild(pre);
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+
+    const result = data?.result === true;
+    output.innerHTML = `
+      <div style="color:${result ? '#4ec9b0' : '#f48771'};font-weight:600">
+        Condición: ${result ? '✓ true' : '✗ false'}
+      </div>
+    `;
+
+    body.appendChild(output);
   }
 };
 

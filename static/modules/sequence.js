@@ -7,17 +7,30 @@ export default {
     const defCic   = toolSpec?.config?.ciclico?.default ?? false;
 
     body.innerHTML = `
-      <div class="form-row">
-        <label for="pasos_${nodeId}">Pasos (salidas 1..N)</label>
-        <input id="pasos_${nodeId}" type="number" min="1" max="12" value="${defPasos}">
+      <label style="font:600 12px system-ui;opacity:.8">Pasos (salidas 1..N)</label>
+      <input 
+        id="pasos_${nodeId}" 
+        data-config-key="pasos"
+        type="number" 
+        min="1" 
+        max="12" 
+        value="${defPasos}"
+        style="font-size:12px"
+      />
+      
+      <label style="font:600 12px system-ui;opacity:.8;margin-top:8px;display:flex;align-items:center;gap:8px;">
+        <input 
+          id="ciclico_${nodeId}" 
+          data-config-key="ciclico"
+          type="checkbox" 
+          ${defCic ? "checked":""}
+        />
+        Cíclico
+      </label>
+      
+      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+        📊 Ejecuta pasos en secuencia
       </div>
-      <div class="form-row">
-        <label style="display:flex; align-items:center; gap:8px;">
-          <input id="ciclico_${nodeId}" type="checkbox" ${defCic ? "checked":""}>
-          Cíclico
-        </label>
-      </div>
-      <div class="muted" style="font-size:11px">Conecta la salida del paso 1 al primer nodo, etc.</div>
     `;
 
     // puertos: eliminamos out existentes y creamos 1..N
@@ -41,20 +54,38 @@ export default {
   },
 
   readConfig(el){
-    const pasos = parseInt(el.querySelector(".body input[type='number']")?.value || "2", 10);
-    const ciclico = !!el.querySelector(".body input[type='checkbox']")?.checked;
-    return { pasos, ciclico };
+    const config = {};
+    el.querySelectorAll("[data-config-key]").forEach(inp => {
+      const key = inp.dataset.configKey;
+      if (inp.type === 'checkbox') {
+        config[key] = inp.checked;
+      } else if (inp.type === 'number') {
+        config[key] = parseInt(inp.value, 10);
+      } else {
+        config[key] = inp.value;
+      }
+    });
+    return config;
   },
 
   renderResult(el, data){
     const body = el.querySelector(".body");
-    const d = document.createElement("div");
-    d.className = "run-output";
-    d.style.font = "12px ui-monospace";
-    d.style.marginTop = "6px";
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+
     const r = data?.result || {};
-    d.textContent = `paso: ${r.paso ?? "?"}/${r.pasos ?? "?"}` + (r.fin ? " (fin)" : "");
-    body.appendChild(d);
+    output.innerHTML = `
+      <div style="color:#4ec9b0;font-weight:600">
+        📊 Paso ${r.paso ?? '?'}/${r.pasos ?? '?'}
+      </div>
+      ${r.fin ? '<div style="color:#888;margin-top:4px">✓ Finalizado</div>' : ''}
+    `;
+
+    body.appendChild(output);
   }
 };
 

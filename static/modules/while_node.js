@@ -7,13 +7,20 @@ export default {
     const def = toolSpec?.config?.max_iter?.default ?? 50;
 
     body.innerHTML = `
-      <div class="form-row">
-        <label for="max_${nodeId}">Máximo de iteraciones</label>
-        <input id="max_${nodeId}" type="number" min="1" max="100000" value="${def}">
-      </div>
-      <div class="muted" style="font-size:11px">
-        Entrada: puede ser <code>{cond, payload}</code> o dos entradas (condición y payload).<br>
-        Salidas: <code>loop</code> (continúa) y <code>salir</code> (finaliza).
+      <label style="font:600 12px system-ui;opacity:.8">Máximo de iteraciones</label>
+      <input 
+        id="max_${nodeId}" 
+        data-config-key="max_iter"
+        type="number" 
+        min="1" 
+        max="100000" 
+        value="${def}"
+        style="font-size:12px"
+      />
+      
+      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+        🔁 Entrada: <code>{cond, payload}</code><br>
+        📤 Salidas: <code>loop</code> y <code>salir</code>
       </div>
     `;
 
@@ -24,19 +31,38 @@ export default {
   },
 
   readConfig(el){
-    const max_iter = parseInt(el.querySelector(".body input[type='number']")?.value || "50", 10);
-    return { max_iter };
+    const config = {};
+    el.querySelectorAll("[data-config-key]").forEach(inp => {
+      const key = inp.dataset.configKey;
+      if (inp.type === 'number') {
+        config[key] = parseInt(inp.value, 10);
+      } else {
+        config[key] = inp.value;
+      }
+    });
+    return config;
   },
 
   renderResult(el, data){
     const body = el.querySelector(".body");
-    const d = document.createElement("div");
-    d.className = "run-output";
-    d.style.font="12px ui-monospace";
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+
     const r = data?.result || {};
-    // sin símbolo "·" para evitar problemas si copias/pegas en entornos raros
-    d.textContent = `iter: ${r.iter ?? "?"}/${r.max_iter ?? "?"} | cond: ${r.cond ? "true" : "false"}` + (r.fin ? " (fin)" : "");
-    body.appendChild(d);
+    output.innerHTML = `
+      <div style="color:#4ec9b0;font-weight:600">
+        🔁 Iteración ${r.iter ?? '?'}/${r.max_iter ?? '?'}
+      </div>
+      <div style="color:#ddd;margin-top:4px">
+        Condición: ${r.cond ? 'true' : 'false'}${r.fin ? ' (finalizado)' : ''}
+      </div>
+    `;
+
+    body.appendChild(output);
   }
 };
 

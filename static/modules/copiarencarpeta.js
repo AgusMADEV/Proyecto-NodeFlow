@@ -6,14 +6,21 @@ export default {
   buildBody(el, toolSpec, nodeId) {
     const body = el.querySelector(".body");
     body.innerHTML = `
-      <div class="form-row">
-        <label for="dest_${nodeId}">Carpeta destino</label>
-        <div style="display:flex; gap:6px;">
-          <input id="dest_${nodeId}" type="text" value="" placeholder="p. ej.: /tmp/salida" style="flex:1">
-          <button type="button" class="btn btn-browse">Examinar…</button>
-        </div>
+      <label style="font:600 12px system-ui;opacity:.8">Carpeta destino</label>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <input 
+          id="dest_${nodeId}" 
+          data-config-key="dest"
+          type="text" 
+          value="" 
+          placeholder="workflows/backup" 
+          style="flex:1;font-size:12px"
+        />
+        <button type="button" class="btn btn-browse" style="font-size:11px;padding:4px 8px">📁</button>
       </div>
-      <div class="muted" style="font-size:11px">Conecta un nodo anterior que devuelva una lista de ficheros.</div>
+      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+        📄 Copia archivos desde entrada
+      </div>
     `;
     body.querySelector(".btn-browse").addEventListener("click", async ()=>{
       const current = body.querySelector("input").value.trim();
@@ -23,18 +30,31 @@ export default {
   },
 
   readConfig(el) {
-    const dest = el.querySelector(".body input")?.value?.trim() || "";
-    return { dest };
+    const config = {};
+    el.querySelectorAll("[data-config-key]").forEach(inp => {
+      const key = inp.dataset.configKey;
+      config[key] = inp.value;
+    });
+    return config;
   },
 
   renderResult(el, data) {
     const body = el.querySelector(".body");
-    const div = document.createElement("div");
-    div.style.font = "12px ui-monospace";
-    div.style.marginTop = "6px";
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+
     const skippedCount = (data.skipped || []).length;
-    div.textContent = `Copiados: ${data.copied} → ${data.dest}` + (skippedCount ? ` | Omitidos: ${skippedCount}` : "");
-    body.appendChild(div);
+    output.innerHTML = `
+      <div style="color:#4ec9b0;font-weight:600">✓ ${data.copied} archivo${data.copied !== 1 ? 's' : ''} copiado${data.copied !== 1 ? 's' : ''}</div>
+      <div style="color:#ddd;margin-top:4px">📁 ${data.dest}</div>
+      ${skippedCount ? '<div style="color:#f48771;margin-top:4px">⚠ ' + skippedCount + ' omitidos</div>' : ''}
+    `;
+
+    body.appendChild(output);
   }
 };
 

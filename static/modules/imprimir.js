@@ -4,24 +4,43 @@ export default {
     const body = el.querySelector(".body");
     const def = toolSpec?.config?.prefix?.default ?? "";
     body.innerHTML = `
-      <div class="form-row">
-        <label for="prefix_${nodeId}">Prefijo</label>
-        <input id="prefix_${nodeId}" type="text" value="${def}" placeholder="ej: Resultado">
+      <label style="font:600 12px system-ui;opacity:.8">Prefijo (opcional)</label>
+      <input 
+        data-config-key="prefix"
+        type="text" 
+        value="${def}" 
+        placeholder="ej: Resultado"
+        style="font-size:12px"
+      />
+
+      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+        📋 Imprime datos en la consola
       </div>
-      <div class="muted" style="font-size:11px">Imprime el input0 en la consola del editor.</div>
     `;
   },
   readConfig(el){
-    const prefix = el.querySelector(".body input")?.value ?? "";
-    return { prefix };
+    const config = {};
+    el.querySelectorAll("[data-config-key]").forEach(inp => {
+      const key = inp.dataset.configKey;
+      config[key] = inp.value;
+    });
+    return config;
   },
   renderResult(el, data){
     const body = el.querySelector(".body");
-    const d = document.createElement("div");
-    d.style.font="12px ui-monospace";
-    d.style.marginTop="6px";
-    d.textContent = `🖨 ${data?.message ?? ""}`;
-    body.appendChild(d);
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
+
+    output.innerHTML = `
+      <div style="color:#4ec9b0;font-weight:600;margin-bottom:4px">🖨️ ${data?.message || 'Impreso'}</div>
+      <pre style="margin:0;color:#ddd;white-space:pre-wrap">${JSON.stringify(data?.value, null, 2).slice(0, 500)}</pre>
+    `;
+
+    body.appendChild(output);
   }
 };
 

@@ -6,8 +6,16 @@ export default {
 
     body.innerHTML = `
       <label style="font:600 12px system-ui;opacity:.8">Expresión (usa <code>x</code>)</label>
-      <input id="expr_${nodeId}" name="expr" value="bool(x)" />
-      <div class="muted">Ej.: <code>x &gt; 10</code>, <code>'ok' in str(x)</code></div>
+      <input 
+        id="expr_${nodeId}" 
+        data-config-key="expr"
+        value="bool(x)" 
+        style="font-size:12px"
+      />
+      
+      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+        Ejemplos: <code>x > 10</code>, <code>'ok' in str(x)</code>
+      </div>
     `;
 
     // puertos: true/false
@@ -18,16 +26,33 @@ export default {
   },
 
   readConfig(el){
-    const inp = el.querySelector('input[name="expr"]');
-    return { expr: (inp?.value || "bool(x)").trim() };
+    const config = {};
+    el.querySelectorAll("[data-config-key]").forEach(inp => {
+      const key = inp.dataset.configKey;
+      config[key] = inp.value;
+    });
+    return config;
   },
 
-  renderResult(el, data){
+  renderResult(el, data) {
     const body = el.querySelector(".body");
-    const pre = document.createElement("pre");
-    pre.className = "run-output";
-    pre.textContent = JSON.stringify(data, null, 2).slice(0, 1000);
-    body.appendChild(pre);
+    const existing = body.querySelector(".run-output");
+    if (existing) existing.remove();
+
+    const output = document.createElement("div");
+    output.className = "run-output";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:150px;overflow:auto";
+
+    if (data.error) {
+      output.innerHTML = `<div style="color:#f48771">✗ ${data.error}</div>`;
+    } else {
+      output.innerHTML = `
+        <div style="color:#4ec9b0;font-weight:600">✓ Evaluado</div>
+        <pre style="margin:4px 0 0 0;color:#ddd;white-space:pre-wrap">${JSON.stringify(data, null, 2).slice(0, 300)}</pre>
+      `;
+    }
+
+    body.appendChild(output);
   }
 };
 
