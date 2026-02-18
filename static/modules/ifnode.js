@@ -13,7 +13,7 @@ export default {
         style="font-size:12px"
       />
       
-      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+      <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.4">
         Ejemplos: <code>x > 10</code>, <code>'ok' in str(x)</code>
       </div>
     `;
@@ -41,14 +41,24 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:150px;overflow:auto";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px;max-height:150px;overflow:auto";
 
     if (data.error) {
-      output.innerHTML = `<div style="color:#f48771">✗ ${data.error}</div>`;
+      output.innerHTML = `<div style="color:#f48771">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        ${data.error}
+      </div>`;
     } else {
       output.innerHTML = `
-        <div style="color:#4ec9b0;font-weight:600">✓ Evaluado</div>
-        <pre style="margin:4px 0 0 0;color:#ddd;white-space:pre-wrap">${JSON.stringify(data, null, 2).slice(0, 300)}</pre>
+        <div style="color:#4ade80;font-weight:600">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align:-1px;margin-right:4px;">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          Evaluado
+        </div>
+        <pre style="margin:4px 0 0 0;color:#d1d5db;white-space:pre-wrap">${JSON.stringify(data, null, 2).slice(0, 300)}</pre>
       `;
     }
 

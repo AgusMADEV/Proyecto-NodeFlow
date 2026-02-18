@@ -45,11 +45,11 @@ export default {
       const valor = valorInput.value.trim();
       
       if (campo && valor) {
-        titleEl.textContent = `🔍 ${campo} ${operador} ${valor}`;
+        titleEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>${campo} ${operador} ${valor}`;
       } else if (campo) {
-        titleEl.textContent = `🔍 Filtrar ${campo}`;
+        titleEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Filtrar ${campo}`;
       } else {
-        titleEl.textContent = "🔍 Filtrar";
+        titleEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Filtrar';
       }
     };
 
@@ -75,7 +75,7 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
 
     if (data.ok) {
       const count = data.count || 0;
@@ -84,15 +84,23 @@ export default {
       const preview = data.data?.slice(0, 3) || [];
       
       output.innerHTML = `
-        <div style="color:#4ec9b0;font-weight:600;margin-bottom:4px">
-          ✓ ${count} de ${original} elementos
-          ${filtrado > 0 ? `<span style="color:#888">(${filtrado} filtrados)</span>` : ''}
+        <div style="color:#4ade80;font-weight:600;margin-bottom:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align:-1px;margin-right:4px;">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          ${count} de ${original} elementos
+          ${filtrado > 0 ? `<span style="color:#6b7280">(${filtrado} filtrados)</span>` : ''}
         </div>
-        <pre style="margin:0;color:#ddd;white-space:pre-wrap">${JSON.stringify(preview, null, 2)}</pre>
-        ${count > 3 ? '<div style="color:#888;margin-top:4px">... y ' + (count - 3) + ' elementos más</div>' : ''}
+        <pre style="margin:0;color:#d1d5db;white-space:pre-wrap">${JSON.stringify(preview, null, 2)}</pre>
+        ${count > 3 ? '<div style="color:#6b7280;margin-top:4px">... y ' + (count - 3) + ' elementos más</div>' : ''}
       `;
     } else {
-      output.innerHTML = `<div style="color:#f48771">✗ ${data.error || 'Error'}</div>`;
+      output.innerHTML = `<div style="color:#f48771">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        ${data.error || 'Error'}
+      </div>`;
     }
 
     body.appendChild(output);

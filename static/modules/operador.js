@@ -19,7 +19,7 @@ export default {
         style="font-size:12px"
       />
 
-      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+      <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.4">
         A = input0, B = input1 (o constante)
       </div>
     `;
@@ -50,14 +50,19 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px";
 
     if(data?.type === "error"){
-      output.innerHTML = `<div style="color:#f48771">✗ ${data.error || 'Error'}</div>`;
+      output.innerHTML = `<div style="color:#f48771">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        ${data.error || 'Error'}
+      </div>`;
     }else{
       output.innerHTML = `
-        <div style="color:#4ec9b0;font-weight:600">Resultado</div>
-        <div style="color:#ddd;margin-top:4px">${String(data?.value)}</div>
+        <div style="color:#4ade80;font-weight:600">Resultado</div>
+        <div style="color:#d1d5db;margin-top:4px">${String(data?.value)}</div>
       `;
     }
 

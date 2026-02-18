@@ -1,7 +1,7 @@
 # modules/mapear.py
 TOOL = {
     "type": "mapear",
-    "label": "🔄 Mapear",
+    "label": "Mapear",
     "description": "Transforma cada elemento de una lista (renombrar campos, calcular nuevos valores).",
     "config": {
         "operacion": {"type": "select", "label": "Operación", "options": ["extraer_campos", "renombrar_campo", "agregar_campo"], "default": "extraer_campos"},

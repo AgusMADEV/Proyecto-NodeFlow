@@ -13,7 +13,7 @@ export default {
         style="font-size:12px"
       />
 
-      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
+      <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.4">
         📋 Imprime datos en la consola
       </div>
     `;
@@ -33,11 +33,11 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
 
     output.innerHTML = `
-      <div style="color:#4ec9b0;font-weight:600;margin-bottom:4px">🖨️ ${data?.message || 'Impreso'}</div>
-      <pre style="margin:0;color:#ddd;white-space:pre-wrap">${JSON.stringify(data?.value, null, 2).slice(0, 500)}</pre>
+      <div style="color:#4ade80;font-weight:600;margin-bottom:4px">🖨️ ${data?.message || 'Impreso'}</div>
+      <pre style="margin:0;color:#d1d5db;white-space:pre-wrap">${JSON.stringify(data?.value, null, 2).slice(0, 500)}</pre>
     `;
 
     body.appendChild(output);

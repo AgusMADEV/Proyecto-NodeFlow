@@ -1,7 +1,7 @@
 # modules/filtrar.py
 TOOL = {
     "type": "filtrar",
-    "label": "🔍 Filtrar",
+    "label": "Filtrar",
     "description": "Filtra elementos de una lista según una condición (campo, operador, valor).",
     "config": {
         "campo": {"type": "string", "label": "Campo a evaluar", "default": ""},

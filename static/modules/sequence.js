@@ -28,8 +28,11 @@ export default {
         Cíclico
       </label>
       
-      <div style="margin-top:6px;font-size:10px;color:#888;line-height:1.4">
-        📊 Ejecuta pasos en secuencia
+      <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.4">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:2px;">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Ejecuta pasos en secuencia
       </div>
     `;
 
@@ -75,14 +78,17 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px";
 
     const r = data?.result || {};
     output.innerHTML = `
-      <div style="color:#4ec9b0;font-weight:600">
-        📊 Paso ${r.paso ?? '?'}/${r.pasos ?? '?'}
+      <div style="color:#4ade80;font-weight:600">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px;">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Paso ${r.paso ?? '?'}/${r.pasos ?? '?'}
       </div>
-      ${r.fin ? '<div style="color:#888;margin-top:4px">✓ Finalizado</div>' : ''}
+      ${r.fin ? '<div style="color:#6b7280;margin-top:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:2px;"><path d="M20 6L9 17l-5-5"/></svg>Finalizado</div>' : ''}
     `;
 
     body.appendChild(output);

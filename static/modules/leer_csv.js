@@ -5,7 +5,13 @@ export default {
     const body = el.querySelector(".body");
 
     body.innerHTML = `
-      <label style="font:600 12px system-ui;opacity:.8">📁 Archivo CSV</label>
+      <label style="font:600 12px system-ui;opacity:.8;display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+          <path d="M13 2v7h7"/>
+        </svg>
+        Archivo CSV
+      </label>
       <input 
         type="text" 
         data-config-key="archivo" 
@@ -46,9 +52,9 @@ export default {
       const archivo = archivoInput.value.trim();
       if (archivo) {
         const filename = archivo.split(/[/\\]/).pop();
-        titleEl.textContent = `📄 Leer: ${filename}`;
+        titleEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M13 2v7h7"/></svg>Leer: ${filename}`;
       } else {
-        titleEl.textContent = "📄 Leer CSV";
+        titleEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M13 2v7h7"/></svg>Leer CSV';
       }
     };
 
@@ -76,18 +82,28 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
 
     if (data.ok) {
       const count = data.count || 0;
       const preview = data.data?.slice(0, 3) || [];
       output.innerHTML = `
-        <div style="color:#4ec9b0;font-weight:600;margin-bottom:4px">✓ Cargadas ${count} filas</div>
-        <pre style="margin:0;color:#ddd;white-space:pre-wrap">${JSON.stringify(preview, null, 2)}</pre>
-        ${count > 3 ? '<div style="color:#888;margin-top:4px">... y ' + (count - 3) + ' filas más</div>' : ''}
+        <div style="color:#4ade80;font-weight:600;margin-bottom:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align:-1px;margin-right:4px;">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          Cargadas ${count} filas
+        </div>
+        <pre style="margin:0;color:#d1d5db;white-space:pre-wrap">${JSON.stringify(preview, null, 2)}</pre>
+        ${count > 3 ? '<div style="color:#6b7280;margin-top:4px">... y ' + (count - 3) + ' filas más</div>' : ''}
       `;
     } else {
-      output.innerHTML = `<div style="color:#f48771">✗ ${data.error || 'Error'}</div>`;
+      output.innerHTML = `<div style="color:#f48771">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        ${data.error || 'Error'}
+      </div>`;
     }
 
     body.appendChild(output);

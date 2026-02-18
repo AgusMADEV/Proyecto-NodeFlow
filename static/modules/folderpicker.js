@@ -42,7 +42,11 @@ export async function openFolderPicker(initialPath = "") {
     res.items.forEach(it=>{
       const el = row(`
         <div class="fp-item" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid #f1f4fb; cursor:pointer;">
-          <div style="width:20px; text-align:center;">${it.is_dir ? "📁" : "📄"}</div>
+          <div style="width:20px; text-align:center;">
+            ${it.is_dir 
+              ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' 
+              : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>'}
+          </div>
           <div style="flex:1">${it.name}</div>
         </div>
       `);

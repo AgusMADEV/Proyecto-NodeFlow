@@ -4,7 +4,7 @@ import os
 
 TOOL = {
     "type": "leer_csv",
-    "label": "📄 Leer CSV",
+    "label": "Leer CSV",
     "description": "Lee un archivo CSV y lo convierte en una lista de diccionarios (tabla de datos).",
     "config": {
         "archivo": {"type": "string", "label": "Ruta del archivo CSV", "default": ""},

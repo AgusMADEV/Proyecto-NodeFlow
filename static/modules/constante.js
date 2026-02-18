@@ -31,7 +31,7 @@ export default {
     const refreshTitle = ()=>{
       const n = (nameEl.value || "").trim();
       const v = (valueEl.value || "").trim() || "¿?";
-      titleEl.textContent = n ? `💎 ${n} = ${v}` : `💎 Constante = ${v}`;
+      titleEl.innerHTML = n ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4.9V17L12 22l-9-4.9V7z"/></svg>${n} = ${v}` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4.9V17L12 22l-9-4.9V7z"/></svg>Constante = ${v}`;
     };
 
     nameEl.addEventListener("input", refreshTitle);
@@ -55,11 +55,11 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px";
 
     output.innerHTML = `
-      <div style="color:#4ec9b0;font-weight:600">Tipo: ${data.type || 'unknown'}</div>
-      <div style="color:#ddd;margin-top:4px">${String(data.value)}</div>
+      <div style="color:#4ade80;font-weight:600">Tipo: ${data.type || 'unknown'}</div>
+      <div style="color:#d1d5db;margin-top:4px">${String(data.value)}</div>
     `;
 
     body.appendChild(output);

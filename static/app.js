@@ -138,6 +138,15 @@ window.addEventListener("keydown",(e)=>{
     e.preventDefault();
     saveBtn?.click();
   }
+  // Ctrl+K o / para buscar herramientas
+  if((e.ctrlKey && e.key === "k") || (e.key === "/" && !e.target.matches('input, textarea'))){
+    e.preventDefault();
+    const searchInput = document.getElementById("tools-search");
+    if(searchInput){
+      searchInput.focus();
+      searchInput.select();
+    }
+  }
   // Ctrl+Z para deshacer
   if(e.ctrlKey && e.key === "z" && !e.shiftKey){
     e.preventDefault();
@@ -240,6 +249,28 @@ centro.addEventListener("pointerdown",(e)=>{
   }
   toolsList.innerHTML = "";
 
+  // SVG Icons para categorías
+  const categoryIcons = {
+    data: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    variables: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8"/></svg>',
+    logic: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4.9V17L12 22l-9-4.9V7z"/><path d="M12 22V12M12 12L3 7M12 12l9-5"/></svg>',
+    operators: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>',
+    files: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+    other: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+  };
+
+  const chevronIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>';
+
+  // Categorizar herramientas
+  const categories = {
+    data: { title: "Datos", icon: categoryIcons.data, tools: [] },
+    variables: { title: "Variables", icon: categoryIcons.variables, tools: [] },
+    logic: { title: "Lógica", icon: categoryIcons.logic, tools: [] },
+    operators: { title: "Operadores", icon: categoryIcons.operators, tools: [] },
+    files: { title: "Archivos", icon: categoryIcons.files, tools: [] },
+    other: { title: "Otros", icon: categoryIcons.other, tools: [] }
+  };
+
   await Promise.all(TOOLS.map(async (t)=>{
     if(t.front_module){
       try{
@@ -253,16 +284,139 @@ centro.addEventListener("pointerdown",(e)=>{
     }
   }));
 
-  // botones compactos: texto=label, tooltip=description
-  TOOLS.forEach(t=>{
-    const btn = document.createElement("button");
-    btn.className = "tool-btn";
-    btn.type = "button";
-    btn.title = (t.description || "").trim();
-    btn.textContent = (t.label || t.type || "Herramienta");
-    btn.addEventListener("click", ()=> crearNodoTool(t));
-    toolsList.appendChild(btn);
+  // Clasificar herramientas por categoría
+  TOOLS.forEach(t => {
+    const type = t.type.toLowerCase();
+    const label = (t.label || "").toLowerCase();
+    
+    if (type.includes('csv') || type.includes('leer') || type.includes('escribir') || 
+        type.includes('filtrar') || type.includes('mapear') || type.includes('extraer')) {
+      categories.data.tools.push(t);
+    } else if (type.includes('var_') || label.includes('variable')) {
+      categories.variables.tools.push(t);
+    } else if (type.includes('if') || type.includes('while') || type.includes('sequence') || 
+               type.includes('router')) {
+      categories.logic.tools.push(t);
+    } else if (type.includes('operador') || type.includes('cmp_') || type.includes('comparar') || 
+               type.includes('constante')) {
+      categories.operators.tools.push(t);
+    } else if (type.includes('carpeta') || type.includes('copiar') || type.includes('listar')) {
+      categories.files.tools.push(t);
+    } else {
+      categories.other.tools.push(t);
+    }
   });
+
+  // Crear UI por categorías
+  Object.entries(categories).forEach(([key, cat]) => {
+    if (cat.tools.length === 0) return;
+
+    const categoryDiv = document.createElement("div");
+    categoryDiv.className = "tool-category";
+    categoryDiv.dataset.category = key;
+
+    const header = document.createElement("div");
+    header.className = "tool-category-header";
+    header.innerHTML = `
+      <span class="tool-category-title">
+        ${cat.icon}
+        ${cat.title}
+        <span class="tool-category-count">${cat.tools.length}</span>
+      </span>
+      <span class="tool-category-icon">${chevronIcon}</span>
+    `;
+
+    const itemsDiv = document.createElement("div");
+    itemsDiv.className = "tool-category-items";
+
+    cat.tools.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "tool-btn";
+      btn.type = "button";
+      btn.title = (t.description || "").trim();
+      
+      // Label con badge para nodos nuevos
+      const isNew = ['leer_csv', 'escribir_csv', 'filtrar', 'mapear', 'extraer_campo'].includes(t.type);
+      const labelText = (t.label || t.type || "Herramienta");
+      btn.innerHTML = isNew 
+        ? `${labelText}<span class="tool-btn-badge">Nuevo</span>` 
+        : labelText;
+      
+      btn.dataset.toolType = t.type;
+      btn.dataset.toolLabel = (t.label || "").toLowerCase();
+      btn.addEventListener("click", () => crearNodoTool(t));
+      itemsDiv.appendChild(btn);
+    });
+
+    // Toggle categoría
+    header.addEventListener("click", () => {
+      header.classList.toggle("collapsed");
+      itemsDiv.classList.toggle("collapsed");
+    });
+
+    categoryDiv.appendChild(header);
+    categoryDiv.appendChild(itemsDiv);
+    toolsList.appendChild(categoryDiv);
+  });
+
+  // Búsqueda de herramientas
+  const searchInput = document.getElementById("tools-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      
+      document.querySelectorAll(".tool-btn").forEach(btn => {
+        const label = btn.dataset.toolLabel || "";
+        const type = btn.dataset.toolType || "";
+        const matches = label.includes(query) || type.includes(query);
+        
+        if (matches || query === "") {
+          btn.classList.remove("hidden");
+        } else {
+          btn.classList.add("hidden");
+        }
+      });
+
+      // Mostrar/ocultar categorías vacías
+      document.querySelectorAll(".tool-category").forEach(cat => {
+        const visibleTools = cat.querySelectorAll(".tool-btn:not(.hidden)").length;
+        if (visibleTools > 0) {
+          cat.style.display = "block";
+          // Expandir automáticamente si hay búsqueda activa
+          if (query) {
+            cat.querySelector(".tool-category-header").classList.remove("collapsed");
+            cat.querySelector(".tool-category-items").classList.remove("collapsed");
+          }
+        } else {
+          cat.style.display = "none";
+        }
+      });
+    });
+  }
+
+  // Toggle todas las categorías
+  const toggleAllBtn = document.getElementById("toggle-all-categories");
+  if (toggleAllBtn) {
+    let allCollapsed = false;
+    const expandIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 13l5 5 5-5M7 7l5 5 5-5"/></svg>';
+    const collapseIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 11l-5-5-5 5M17 17l-5-5-5 5"/></svg>';
+    
+    toggleAllBtn.addEventListener("click", () => {
+      allCollapsed = !allCollapsed;
+      document.querySelectorAll(".tool-category-header").forEach(header => {
+        const items = header.nextElementSibling;
+        if (allCollapsed) {
+          header.classList.add("collapsed");
+          items.classList.add("collapsed");
+        } else {
+          header.classList.remove("collapsed");
+          items.classList.remove("collapsed");
+        }
+      });
+      toggleAllBtn.innerHTML = allCollapsed ? expandIcon : collapseIcon;
+      toggleAllBtn.title = allCollapsed ? "Expandir todas" : "Colapsar todas";
+    });
+  }
 })();
 
 // -------------------- Crear nodos --------------------

@@ -1,7 +1,7 @@
 # modules/extraer_campo.py
 TOOL = {
     "type": "extraer_campo",
-    "label": "📌 Extraer Campo",
+    "label": "Extraer Campo",
     "description": "Extrae un campo específico de cada elemento y retorna una lista simple de valores.",
     "config": {
         "campo": {"type": "string", "label": "Campo a extraer", "default": ""}

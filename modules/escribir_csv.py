@@ -4,7 +4,7 @@ import os
 
 TOOL = {
     "type": "escribir_csv",
-    "label": "💾 Escribir CSV",
+    "label": "Escribir CSV",
     "description": "Escribe una lista de datos en un archivo CSV.",
     "config": {
         "archivo": {"type": "string", "label": "Ruta del archivo CSV", "default": "salida.csv"},

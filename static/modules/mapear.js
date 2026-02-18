@@ -70,11 +70,11 @@ export default {
       agregarContainer.style.display = op === "agregar_campo" ? "block" : "none";
       
       const labels = {
-        "extraer_campos": "🔄 Extraer campos",
-        "renombrar_campo": "🔄 Renombrar",
-        "agregar_campo": "🔄 Agregar campo"
+        "extraer_campos": '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/></svg>Extraer campos',
+        "renombrar_campo": '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/></svg>Renombrar',
+        "agregar_campo": '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/></svg>Agregar campo'
       };
-      titleEl.textContent = labels[op] || "🔄 Mapear";
+      titleEl.innerHTML = labels[op] || '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/></svg>Mapear';
     };
 
     opSelect.addEventListener("change", updateVisibility);
@@ -97,19 +97,29 @@ export default {
 
     const output = document.createElement("div");
     output.className = "run-output";
-    output.style.cssText = "margin-top:8px;padding:8px;background:#1e1e1e;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
+    output.style.cssText = "margin-top:8px;padding:8px;background:#25343F;border-radius:4px;font-size:11px;max-height:200px;overflow:auto";
 
     if (data.ok) {
       const count = data.count || 0;
       const preview = data.data?.slice(0, 3) || [];
       
       output.innerHTML = `
-        <div style="color:#4ec9b0;font-weight:600;margin-bottom:4px">✓ ${count} elementos transformados</div>
-        <pre style="margin:0;color:#ddd;white-space:pre-wrap">${JSON.stringify(preview, null, 2)}</pre>
-        ${count > 3 ? '<div style="color:#888;margin-top:4px">... y ' + (count - 3) + ' elementos más</div>' : ''}
+        <div style="color:#4ade80;font-weight:600;margin-bottom:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align:-1px;margin-right:4px;">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          ${count} elementos transformados
+        </div>
+        <pre style="margin:0;color:#d1d5db;white-space:pre-wrap">${JSON.stringify(preview, null, 2)}</pre>
+        ${count > 3 ? '<div style="color:#6b7280;margin-top:4px">... y ' + (count - 3) + ' elementos más</div>' : ''}
       `;
     } else {
-      output.innerHTML = `<div style="color:#f48771">✗ ${data.error || 'Error'}</div>`;
+      output.innerHTML = `<div style="color:#f48771">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        ${data.error || 'Error'}
+      </div>`;
     }
 
     body.appendChild(output);
