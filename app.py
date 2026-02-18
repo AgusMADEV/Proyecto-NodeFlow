@@ -12,7 +12,7 @@ from modules import load_backend_modules
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
 # ===== Config (hardcoded, acceso total) =====
-BASE_DIR = "/"          # raíz del sistema
+BASE_DIR = os.path.dirname(__file__)  # directorio del proyecto
 ALLOW_ANY_PATH = True   # permite rutas absolutas en todo el FS
 WORKFLOWS_DIR = os.path.join(os.path.dirname(__file__), "workflows")
 

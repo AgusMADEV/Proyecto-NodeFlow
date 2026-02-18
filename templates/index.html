@@ -75,7 +75,7 @@
   </aside>
 
   <script>
-    window.APP_CONFIG = { baseDir: "{{ base_dir }}" };
+    window.APP_CONFIG = { baseDir: {{ base_dir|tojson }} };
   </script>
   <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
 </body>
