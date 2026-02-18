@@ -6,6 +6,11 @@ const edgesSvg  = document.getElementById("edges");
 const toolsList = document.getElementById("tools-list");
 const playBtn   = document.getElementById("play");
 const delBtn    = document.getElementById("deleteNode");
+const saveBtn   = document.getElementById("saveBtn");
+const loadBtn   = document.getElementById("loadBtn");
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+const newBtn    = document.getElementById("newBtn");
 const logEl     = document.getElementById("log");
 
 const nodos  = [];      // {id,x,y,el,type,config}
@@ -116,6 +121,66 @@ window.addEventListener("keydown",(e)=>{
   if(e.key === "Delete" || e.key === "Supr"){
     eliminarNodoSeleccionado();
   }
+  // Ctrl+S para guardar
+  if(e.ctrlKey && e.key === "s"){
+    e.preventDefault();
+    saveBtn?.click();
+  }
+});
+
+// -------------------- Event Listeners para Persistencia --------------------
+saveBtn?.addEventListener("click", async () => {
+  const name = prompt("Nombre del workflow:", currentWorkflowName || "mi-workflow");
+  if (name) {
+    const success = await saveWorkflow(name);
+    if (success) currentWorkflowName = name;
+  }
+});
+
+loadBtn?.addEventListener("click", async () => {
+  const workflows = await listWorkflows();
+  if (workflows.length === 0) {
+    alert("No hay workflows guardados");
+    return;
+  }
+
+  let message = "Workflows disponibles:\n\n";
+  workflows.forEach((w, i) => {
+    message += `${i + 1}. ${w.name} (${w.node_count} nodos, ${w.edge_count} conexiones)\n`;
+  });
+  message += "\nIngrese el número o nombre del workflow a cargar:";
+
+  const input = prompt(message);
+  if (!input) return;
+
+  const num = parseInt(input);
+  let name;
+  if (!isNaN(num) && num > 0 && num <= workflows.length) {
+    name = workflows[num - 1].name;
+  } else {
+    name = input;
+  }
+
+  await loadWorkflow(name);
+});
+
+exportBtn?.addEventListener("click", () => {
+  exportWorkflow();
+});
+
+importBtn?.addEventListener("click", () => {
+  importWorkflow();
+});
+
+newBtn?.addEventListener("click", () => {
+  if (nodos.length > 0) {
+    if (!confirm("¿Crear nuevo workflow? Se perderá el trabajo actual si no está guardado.")) {
+      return;
+    }
+  }
+  clearWorkflow();
+  currentWorkflowName = null;
+  log("Workspace limpiado");
 });
 
 // click vacío para deseleccionar (si no estás conectando)
@@ -512,7 +577,7 @@ playBtn.addEventListener("click", async ()=>{
     if(!node) return;
 
     if(r.ok){
-      log(`✔ ${node.type} (${nid}) OK`);
+      log(`[OK] ${node.type} (${nid})`);
 
       const mod = frontModules[node.type];
       if(mod?.renderResult){
@@ -527,12 +592,276 @@ playBtn.addEventListener("click", async ()=>{
 
       if(node.type === "imprimir"){
         const s = r?.data?.text;
-        if(typeof s === "string") log(`🖨 ${s}`);
+        if(typeof s === "string") log(`[PRINT] ${s}`);
       }
 
     }else{
-      log(`✖ ${node.type} (${nid}) ERROR: ${r.error}`);
+      log(`[ERROR] ${node.type} (${nid}): ${r.error}`);
     }
   });
 });
+
+// ==================== PERSISTENCIA DE WORKFLOWS ====================
+
+/**
+ * Serializa el estado actual (nodos + conexiones) a un objeto JSON
+ */
+function serializeWorkflow() {
+  const nodes = nodos.map(n => ({
+    id: n.id,
+    x: parseFloat(n.el.style.left || "0"),
+    y: parseFloat(n.el.style.top || "0"),
+    type: n.type,
+    config: n.config || {}
+  }));
+
+  const edges = conexiones.map(c => ({
+    from: nodos[c.from]?.id,
+    to: nodos[c.to]?.id,
+    from_port: c.fromPort || "default"
+  })).filter(e => e.from && e.to);
+
+  return {
+    nodes,
+    edges,
+    viewport: {
+      scale,
+      translateX,
+      translateY
+    }
+  };
+}
+
+/**
+ * Carga un workflow desde un objeto JSON
+ */
+async function deserializeWorkflow(data) {
+  // Limpiar estado actual
+  clearWorkflow();
+
+  // Restaurar viewport
+  if (data.viewport) {
+    scale = data.viewport.scale || 1;
+    translateX = data.viewport.translateX || 0;
+    translateY = data.viewport.translateY || 0;
+    aplicarTransform();
+  }
+
+  // Restaurar nodos
+  const nodeIdMap = {}; // viejo ID -> nuevo índice
+  for (const nodeData of (data.nodes || [])) {
+    const tool = TOOLS.find(t => t.type === nodeData.type);
+    if (!tool) {
+      log(`[WARN] Herramienta '${nodeData.type}' no encontrada, omitiendo nodo`);
+      continue;
+    }
+
+    const el = crearNodoBase(nodeData.x, nodeData.y, tool.label || tool.type);
+    const nodeId = nodeData.id || ("n" + nodoCounter++);
+    el.dataset.nodeId = nodeId;
+
+    // Aplicar configuración
+    const mod = frontModules[tool.type];
+    if (mod?.buildBody) {
+      mod.buildBody(el, tool, nodeId);
+      // Restaurar valores de config
+      if (nodeData.config) {
+        Object.entries(nodeData.config).forEach(([key, value]) => {
+          const input = el.querySelector(`[data-config-key="${key}"]`);
+          if (input) {
+            if (input.type === "checkbox") {
+              input.checked = !!value;
+            } else {
+              input.value = value;
+            }
+          }
+        });
+      }
+    } else {
+      const body = el.querySelector(".body");
+      body.innerHTML = `<div class="muted" style="font-size:12px">Sin UI de configuración.</div>`;
+    }
+
+    // Quitar puerto out por defecto si hay múltiples
+    const outs = el.querySelectorAll(".port.out");
+    if (outs.length > 1 && !outs[0].dataset.port) {
+      outs[0].remove();
+    }
+
+    hacerDraggable(el);
+
+    const newIdx = nodos.length;
+    nodos.push({ id: nodeId, x: nodeData.x, y: nodeData.y, el, type: tool.type, config: nodeData.config || {} });
+    nodeIdMap[nodeData.id] = newIdx;
+  }
+
+  // Restaurar conexiones
+  for (const edgeData of (data.edges || [])) {
+    const fromNode = nodos.find(n => n.id === edgeData.from);
+    const toNode = nodos.find(n => n.id === edgeData.to);
+
+    if (!fromNode || !toNode) continue;
+
+    const fromIdx = nodos.indexOf(fromNode);
+    const toIdx = nodos.indexOf(toNode);
+
+    conexiones.push({
+      from: fromIdx,
+      to: toIdx,
+      fromPort: edgeData.from_port || "default",
+      pathBg: null,
+      path: null,
+      glow: null
+    });
+  }
+
+  actualizarConexiones();
+  log("Workflow cargado exitosamente");
+}
+
+/**
+ * Limpia el workspace completamente
+ */
+function clearWorkflow() {
+  // Eliminar todos los nodos del DOM
+  nodos.forEach(n => n.el.remove());
+  nodos.length = 0;
+
+  // Eliminar todas las conexiones SVG
+  conexiones.forEach(c => {
+    [c.pathBg, c.path, c.glow].forEach(el => el && el.remove && el.remove());
+  });
+  conexiones.length = 0;
+
+  selectedNodeId = null;
+  nodoCounter = 1;
+
+  // Limpiar outputs
+  document.querySelectorAll(".run-output").forEach(el => el.remove());
+}
+
+/**
+ * Guarda el workflow actual en el servidor
+ */
+async function saveWorkflow(name) {
+  if (!name || !name.trim()) {
+    log("[ERROR] Nombre de workflow requerido");
+    return false;
+  }
+
+  const data = serializeWorkflow();
+  
+  try {
+    const res = await fetch(`/api/workflows/${encodeURIComponent(name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(r => r.json());
+
+    if (res.ok) {
+      log(`[SAVED] Workflow '${name}' guardado`);
+      return true;
+    } else {
+      log(`[ERROR] Guardando: ${res.error}`);
+      return false;
+    }
+  } catch (error) {
+    log(`[ERROR] ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Carga un workflow desde el servidor
+ */
+async function loadWorkflow(name) {
+  if (!name || !name.trim()) {
+    log("[ERROR] Nombre de workflow requerido");
+    return false;
+  }
+
+  try {
+    const res = await fetch(`/api/workflows/${encodeURIComponent(name)}`).then(r => r.json());
+
+    if (res.error) {
+      log(`[ERROR] Cargando: ${res.error}`);
+      return false;
+    }
+
+    await deserializeWorkflow(res);
+    currentWorkflowName = name;
+    return true;
+  } catch (error) {
+    log(`[ERROR] ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Lista workflows disponibles
+ */
+async function listWorkflows() {
+  try {
+    const res = await fetch("/api/workflows").then(r => r.json());
+    return res.workflows || [];
+  } catch (error) {
+    log(`[ERROR] Listando workflows: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Exporta el workflow actual como archivo JSON
+ */
+function exportWorkflow() {
+  const data = serializeWorkflow();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `workflow-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log("[EXPORTED] Workflow exportado");
+}
+
+/**
+ * Importa un workflow desde archivo JSON
+ */
+function importWorkflow() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json,.json";
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await deserializeWorkflow(data);
+      currentWorkflowName = null; // imported, not saved yet
+    } catch (error) {
+      log(`[ERROR] Importando: ${error.message}`);
+    }
+  };
+  input.click();
+}
+
+// Variable para trackear el workflow actual
+let currentWorkflowName = null;
+
+// Exportar funciones globalmente para que puedan ser usadas desde los botones
+window.WORKFLOW_API = {
+  save: saveWorkflow,
+  load: loadWorkflow,
+  list: listWorkflows,
+  export: exportWorkflow,
+  import: importWorkflow,
+  clear: clearWorkflow,
+  serialize: serializeWorkflow,
+  deserialize: deserializeWorkflow
+};
 

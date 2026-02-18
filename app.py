@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 import os
+import json
 import webbrowser
 from threading import Timer
 from collections import defaultdict, deque
 from typing import Dict, Any, List, Tuple
+from datetime import datetime
 
 from modules import load_backend_modules
 
@@ -12,6 +14,11 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 # ===== Config (hardcoded, acceso total) =====
 BASE_DIR = "/"          # raíz del sistema
 ALLOW_ANY_PATH = True   # permite rutas absolutas en todo el FS
+WORKFLOWS_DIR = os.path.join(os.path.dirname(__file__), "workflows")
+
+# Crear directorio de workflows si no existe
+if not os.path.exists(WORKFLOWS_DIR):
+    os.makedirs(WORKFLOWS_DIR)
 
 BACKEND_MODULES = load_backend_modules()
 
@@ -89,6 +96,87 @@ def api_fs_list():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/workflows", methods=["GET"])
+def api_list_workflows():
+    """Lista todos los workflows guardados"""
+    try:
+        workflows = []
+        for filename in os.listdir(WORKFLOWS_DIR):
+            if filename.endswith(".json"):
+                filepath = os.path.join(WORKFLOWS_DIR, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        workflows.append({
+                            "name": filename[:-5],  # sin .json
+                            "filename": filename,
+                            "saved_at": data.get("saved_at", "Desconocido"),
+                            "node_count": len(data.get("nodes", [])),
+                            "edge_count": len(data.get("edges", []))
+                        })
+                except Exception as e:
+                    print(f"Error leyendo {filename}: {e}")
+        workflows.sort(key=lambda x: x.get("saved_at", ""), reverse=True)
+        return jsonify({"workflows": workflows})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/workflows/<name>", methods=["GET"])
+def api_load_workflow(name):
+    """Carga un workflow específico"""
+    try:
+        filename = f"{name}.json" if not name.endswith(".json") else name
+        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        
+        if not os.path.isfile(filepath):
+            return jsonify({"error": f"Workflow '{name}' no encontrado"}), 404
+        
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/workflows/<name>", methods=["POST"])
+def api_save_workflow(name):
+    """Guarda un workflow"""
+    try:
+        payload = request.get_json(silent=True) or {}
+        
+        # Agregar metadata
+        payload["saved_at"] = datetime.now().isoformat()
+        payload["name"] = name
+        
+        filename = f"{name}.json" if not name.endswith(".json") else name
+        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+        
+        return jsonify({"ok": True, "message": f"Workflow '{name}' guardado exitosamente"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/workflows/<name>", methods=["DELETE"])
+def api_delete_workflow(name):
+    """Elimina un workflow"""
+    try:
+        filename = f"{name}.json" if not name.endswith(".json") else name
+        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        
+        if not os.path.isfile(filepath):
+            return jsonify({"error": f"Workflow '{name}' no encontrado"}), 404
+        
+        os.remove(filepath)
+        return jsonify({"ok": True, "message": f"Workflow '{name}' eliminado"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/execute", methods=["POST"])
@@ -221,6 +309,8 @@ def open_browser():
 
 
 if __name__ == "__main__":
-    Timer(0.75, open_browser).start()
+    # Solo abrir navegador en el proceso del reloader, no en el proceso principal
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        Timer(0.75, open_browser).start()
     app.run(debug=True)
 

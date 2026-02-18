@@ -8,8 +8,51 @@
 </head>
 <body>
   <header>
-    <button id="play" class="btn">▶ Ejecutar grafo</button>
-    <button id="deleteNode" class="btn" title="Elimina el nodo seleccionado (Supr)">🗑 Eliminar</button>
+    <button id="play" class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      Ejecutar grafo
+    </button>
+    <button id="deleteNode" class="btn" title="Elimina el nodo seleccionado (Supr)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+      </svg>
+      Eliminar
+    </button>
+    <div style="border-left: 1px solid #ddd; height: 24px; margin: 0 5px;"></div>
+    <button id="saveBtn" class="btn" title="Guardar workflow (Ctrl+S)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+        <path d="M17 21v-8H7v8M7 3v5h8"/>
+      </svg>
+      Guardar
+    </button>
+    <button id="loadBtn" class="btn" title="Cargar workflow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Cargar
+    </button>
+    <button id="exportBtn" class="btn" title="Exportar como JSON">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+      Exportar
+    </button>
+    <button id="importBtn" class="btn" title="Importar desde JSON">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      </svg>
+      Importar
+    </button>
+    <button id="newBtn" class="btn" title="Nuevo workflow (limpia todo)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <path d="M14 2v6h6M12 18v-6M9 15h6"/>
+      </svg>
+      Nuevo
+    </button>
     <div class="muted">Pan: Ctrl + arrastrar · Zoom: Ctrl + rueda · Selección: clic · Borrar: Supr</div>
     <div class="muted">BASE_DIR: <code>{{ base_dir }}</code></div>
   </header>
