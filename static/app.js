@@ -22,6 +22,15 @@ const frontModules = {};  // type -> módulo JS importado
 // selección
 let selectedNodeId = null;
 
+// ==================== UNDO/REDO ====================
+const undoStack = [];  // historial de estados previos
+const redoStack = [];  // estados para rehacer
+const MAX_HISTORY = 50;  // máximo de estados guardados
+let isRestoring = false;  // flag para evitar guardar durante restauración
+
+// ==================== COPY/PASTE ====================
+let clipboard = null;  // {type, config, x, y}
+
 // transform
 let scale = 1, translateX = 0, translateY = 0;
 function aplicarTransform(){ mundo.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`; }
@@ -91,6 +100,9 @@ function eliminarNodoSeleccionado(){
   const n = getSelectedNode();
   if(!n) return;
 
+  // Guardar estado antes de eliminar
+  saveState();
+
   const idx = nodos.indexOf(n);
   if(idx < 0) return;
 
@@ -125,6 +137,34 @@ window.addEventListener("keydown",(e)=>{
   if(e.ctrlKey && e.key === "s"){
     e.preventDefault();
     saveBtn?.click();
+  }
+  // Ctrl+Z para deshacer
+  if(e.ctrlKey && e.key === "z" && !e.shiftKey){
+    e.preventDefault();
+    undo();
+  }
+  // Ctrl+Y o Ctrl+Shift+Z para rehacer
+  if((e.ctrlKey && e.key === "y") || (e.ctrlKey && e.shiftKey && e.key === "Z")){
+    e.preventDefault();
+    redo();
+  }
+  // Ctrl+C para copiar
+  if(e.ctrlKey && e.key === "c"){
+    const target = e.target;
+    // Solo interceptar si no estamos en un input/textarea
+    if(!target.matches('input, textarea')){
+      e.preventDefault();
+      copyNode();
+    }
+  }
+  // Ctrl+V para pegar
+  if(e.ctrlKey && e.key === "v"){
+    const target = e.target;
+    // Solo interceptar si no estamos en un input/textarea
+    if(!target.matches('input, textarea')){
+      e.preventDefault();
+      pasteNode();
+    }
   }
 });
 
@@ -180,6 +220,7 @@ newBtn?.addEventListener("click", () => {
   }
   clearWorkflow();
   currentWorkflowName = null;
+  logEl.textContent = "";  // Limpiar la consola
   log("Workspace limpiado");
 });
 
@@ -259,6 +300,9 @@ function crearNodoBase(x, y, title){
 }
 
 function crearNodoTool(tool){
+  // Guardar estado antes de crear nodo
+  saveState();
+
   const {x,y} = screenToWorld(140 + Math.random()*140, 140 + Math.random()*140);
   const el = crearNodoBase(x, y, tool.label || tool.type);
 
@@ -295,7 +339,7 @@ function crearNodoTool(tool){
 // -------------------- Drag --------------------
 function hacerDraggable(el){
   const handle = el.querySelector(".drag-handle") || el;
-  let dragging=false, startX=0, startY=0, origX=0, origY=0;
+  let dragging=false, startX=0, startY=0, origX=0, origY=0, hasMoved=false;
 
   handle.addEventListener("pointerdown",(e)=>{
     if(conexionEnCurso) return;
@@ -303,14 +347,19 @@ function hacerDraggable(el){
     if(e.target.closest("input,textarea,select,button")) return;
 
     dragging=true;
+    hasMoved=false;
     handle.setPointerCapture(e.pointerId);
     startX=e.clientX; startY=e.clientY;
     origX=parseFloat(el.style.left||"0");
     origY=parseFloat(el.style.top||"0");
+    
+    // Guardar estado ANTES de mover el nodo
+    saveState();
   });
 
   handle.addEventListener("pointermove",(e)=>{
     if(!dragging) return;
+    hasMoved=true;
     const dx=(e.clientX-startX)/scale;
     const dy=(e.clientY-startY)/scale;
     el.style.left = (origX+dx) + "px";
@@ -319,7 +368,9 @@ function hacerDraggable(el){
     if(conexionEnCurso) actualizarPreviewConexion(e);
   });
 
-  handle.addEventListener("pointerup",()=>{ dragging=false; });
+  handle.addEventListener("pointerup",()=>{ 
+    dragging=false; 
+  });
   handle.addEventListener("pointercancel",()=>{ dragging=false; });
 }
 
@@ -508,6 +559,9 @@ centro.addEventListener("pointerup", (e) => {
     return;
   }
 
+  // Guardar estado antes de crear conexión
+  saveState();
+
   conexiones.push({
     from: conexionEnCurso.fromIdx,
     to: toIdx,
@@ -636,8 +690,14 @@ function serializeWorkflow() {
  * Carga un workflow desde un objeto JSON
  */
 async function deserializeWorkflow(data) {
-  // Limpiar estado actual
-  clearWorkflow();
+  // Detectar si estamos en modo undo/redo
+  const wasRestoring = isRestoring;
+  
+  // Marcar que estamos restaurando para no guardar en el historial
+  isRestoring = true;
+  
+  // Limpiar estado actual (preservar historial solo si viene de undo/redo)
+  clearWorkflow(wasRestoring);
 
   // Restaurar viewport
   if (data.viewport) {
@@ -717,12 +777,14 @@ async function deserializeWorkflow(data) {
 
   actualizarConexiones();
   log("Workflow cargado exitosamente");
+  
+  isRestoring = false;
 }
 
 /**
  * Limpia el workspace completamente
  */
-function clearWorkflow() {
+function clearWorkflow(preserveHistory = false) {
   // Eliminar todos los nodos del DOM
   nodos.forEach(n => n.el.remove());
   nodos.length = 0;
@@ -738,6 +800,12 @@ function clearWorkflow() {
 
   // Limpiar outputs
   document.querySelectorAll(".run-output").forEach(el => el.remove());
+  
+  // Limpiar historial solo si no estamos restaurando
+  if (!preserveHistory) {
+    undoStack.length = 0;
+    redoStack.length = 0;
+  }
 }
 
 /**
@@ -853,6 +921,195 @@ function importWorkflow() {
 // Variable para trackear el workflow actual
 let currentWorkflowName = null;
 
+// ==================== FUNCIONES DE UNDO/REDO ====================
+
+/**
+ * Guarda el estado actual del workflow en el historial
+ */
+function saveState() {
+  // No guardar si estamos restaurando
+  if (isRestoring) return;
+
+  const state = serializeWorkflow();
+  undoStack.push(JSON.stringify(state));
+
+  // Limitar tamaño del historial
+  if (undoStack.length > MAX_HISTORY) {
+    undoStack.shift();
+  }
+
+  // Limpiar redo stack cuando se hace una nueva acción
+  redoStack.length = 0;
+}
+
+/**
+ * Deshace la última acción
+ */
+async function undo() {
+  if (undoStack.length === 0) {
+    log("[UNDO] No hay acciones para deshacer");
+    return;
+  }
+
+  // Guardar estado actual en redo stack
+  const currentState = serializeWorkflow();
+  redoStack.push(JSON.stringify(currentState));
+
+  // Restaurar estado anterior
+  const previousState = undoStack.pop();
+  const data = JSON.parse(previousState);
+
+  isRestoring = true;
+  await deserializeWorkflow(data);
+  isRestoring = false;
+
+  log("[UNDO] Deshecho");
+}
+
+/**
+ * Rehace la última acción deshecha
+ */
+async function redo() {
+  if (redoStack.length === 0) {
+    log("[REDO] No hay acciones para rehacer");
+    return;
+  }
+
+  // Guardar estado actual en undo stack
+  const currentState = serializeWorkflow();
+  undoStack.push(JSON.stringify(currentState));
+
+  // Restaurar estado siguiente
+  const nextState = redoStack.pop();
+  const data = JSON.parse(nextState);
+
+  isRestoring = true;
+  await deserializeWorkflow(data);
+  isRestoring = false;
+
+  log("[REDO] Rehecho");
+}
+
+// ==================== FUNCIONES DE COPY/PASTE ====================
+
+/**
+ * Copia el nodo seleccionado al portapapeles
+ */
+function copyNode() {
+  const node = getSelectedNode();
+  if (!node) {
+    log("[COPY] No hay nodo seleccionado");
+    return;
+  }
+
+  // Leer configuración actual del nodo
+  const mod = frontModules[node.type];
+  let config = {};
+  
+  if (mod?.readConfig) {
+    config = mod.readConfig(node.el) || {};
+  } else {
+    const inputs = node.el.querySelectorAll(".body input, .body textarea, .body select");
+    inputs.forEach(inp => {
+      const key = (inp.name || inp.id || inp.dataset.configKey || "").trim();
+      if (!key) return;
+      if (inp.type === "checkbox") {
+        config[key] = inp.checked;
+      } else {
+        config[key] = inp.value;
+      }
+    });
+  }
+
+  clipboard = {
+    type: node.type,
+    config: config,
+    x: parseFloat(node.el.style.left || "0"),
+    y: parseFloat(node.el.style.top || "0")
+  };
+
+  log(`[COPY] Nodo '${node.type}' copiado`);
+}
+
+/**
+ * Pega el nodo del portapapeles
+ */
+function pasteNode() {
+  if (!clipboard) {
+    log("[PASTE] No hay nodo en el portapapeles");
+    return;
+  }
+
+  const tool = TOOLS.find(t => t.type === clipboard.type);
+  if (!tool) {
+    log(`[PASTE] Herramienta '${clipboard.type}' no encontrada`);
+    return;
+  }
+
+  // Guardar estado antes de pegar
+  saveState();
+
+  // Crear nodo con offset para que no se superponga
+  const offsetX = 50;
+  const offsetY = 50;
+  const el = crearNodoBase(clipboard.x + offsetX, clipboard.y + offsetY, tool.label || tool.type);
+
+  const nodeId = "n" + (nodoCounter++);
+  el.dataset.nodeId = nodeId;
+
+  // Construir el cuerpo según módulo front
+  const mod = frontModules[tool.type];
+  if (mod?.buildBody) {
+    mod.buildBody(el, tool, nodeId);
+    
+    // Restaurar configuración copiada
+    if (clipboard.config) {
+      Object.entries(clipboard.config).forEach(([key, value]) => {
+        const input = el.querySelector(`[data-config-key="${key}"]`);
+        if (input) {
+          if (input.type === "checkbox") {
+            input.checked = !!value;
+          } else {
+            input.value = value;
+          }
+        }
+      });
+    }
+  } else {
+    const body = el.querySelector(".body");
+    body.innerHTML = `<div class="muted" style="font-size:12px">Sin UI de configuración.</div>`;
+  }
+
+  // Si hay múltiples puertos, quitar el default
+  const outs = el.querySelectorAll(".port.out");
+  if (outs.length > 1) {
+    const first = outs[0];
+    if (!first.dataset.port) first.remove();
+  }
+
+  // Hacer draggable
+  hacerDraggable(el);
+
+  // Registrar nodo
+  nodos.push({ 
+    id: nodeId, 
+    x: clipboard.x + offsetX, 
+    y: clipboard.y + offsetY, 
+    el, 
+    type: tool.type, 
+    config: clipboard.config || {} 
+  });
+
+  actualizarConexiones();
+  
+  // Seleccionar el nodo pegado con un pequeño delay para evitar conflictos
+  setTimeout(() => {
+    setSelected(nodeId);
+  }, 10);
+
+  log(`[PASTE] Nodo '${tool.type}' pegado`);
+}
+
 // Exportar funciones globalmente para que puedan ser usadas desde los botones
 window.WORKFLOW_API = {
   save: saveWorkflow,
@@ -862,6 +1119,10 @@ window.WORKFLOW_API = {
   import: importWorkflow,
   clear: clearWorkflow,
   serialize: serializeWorkflow,
-  deserialize: deserializeWorkflow
+  deserialize: deserializeWorkflow,
+  undo: undo,
+  redo: redo,
+  copy: copyNode,
+  paste: pasteNode
 };
 
