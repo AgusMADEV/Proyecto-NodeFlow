@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "id": "n2",
+      "x": 320.872,
+      "y": 23.4105,
+      "type": "extraer_campo",
+      "config": {}
+    },
+    {
+      "id": "n1",
+      "x": 713.396,
+      "y": 49.8895,
+      "type": "extraer_campo",
+      "config": {
+        "campo": ""
+      }
+    },
+    {
+      "id": "n2",
+      "x": 370.872,
+      "y": 73.4105,
+      "type": "extraer_campo",
+      "config": {
+        "campo": ""
+      }
+    },
+    {
+      "id": "n3",
+      "x": 530.373,
+      "y": 49.1545,
+      "type": "extraer_campo",
+      "config": {
+        "campo": ""
+      }
+    },
+    {
+      "id": "n4",
+      "x": 320.155,
+      "y": 185.135,
+      "type": "extraer_campo",
+      "config": {
+        "campo": ""
+      }
+    },
+    {
+      "id": "n5",
+      "x": 615.637,
+      "y": 163.084,
+      "type": "extraer_campo",
+      "config": {
+        "campo": ""
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "scale": 1.3604889600000003,
+    "translateX": -359.3052185600004,
+    "translateY": 30.5951243587499
+  },
+  "saved_at": "2026-02-20T11:07:51.664154",
+  "name": "examen"
+}

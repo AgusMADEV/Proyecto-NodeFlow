@@ -2,3 +2,5 @@ workflows/mi-workflow.json
 respuesta.md
 /modules/__pycache__
 /modules/__pycache__
+doc/NodeFlow.md
+*.csv
